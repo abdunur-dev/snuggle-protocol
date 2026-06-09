@@ -28,26 +28,57 @@ function BrowseContent() {
   const { data, isLoading } = useQuery({
     queryKey: ["servers", catParam || "all", sort],
     queryFn: async () => {
-      let q = supabase
-        .from("mcp_servers")
-        .select("id,name,slug,description,category,github_url,install_count,star_rating")
-        .eq("approved", true);
-      
-      if (catParam) {
-        q = q.eq("category", catParam);
+      try {
+        let q = supabase
+          .from("mcp_servers")
+          .select("id,name,slug,description,category,github_url,install_count,star_rating")
+          .eq("approved", true);
+        
+        if (catParam) {
+          q = q.eq("category", catParam);
+        }
+        
+        if (sort === "newest") {
+          q = q.order("created_at", { ascending: false });
+        } else if (sort === "rating") {
+          q = q.order("star_rating", { ascending: false });
+        } else {
+          q = q.order("install_count", { ascending: false });
+        }
+        
+        const { data, error } = await q;
+        if (error || !data || data.length === 0) {
+          const { FALLBACK_SERVERS } = await import("@/lib/supabase/fallback-data");
+          let result = [...FALLBACK_SERVERS];
+          if (catParam) {
+            result = result.filter(s => s.category === catParam);
+          }
+          if (sort === "newest") {
+            result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          } else if (sort === "rating") {
+            result.sort((a, b) => b.star_rating - a.star_rating);
+          } else {
+            result.sort((a, b) => b.install_count - a.install_count);
+          }
+          return result as unknown as ServerRow[];
+        }
+        return data as ServerRow[];
+      } catch (err) {
+        console.warn("Failed to fetch mcp_servers from Supabase, using local fallback data:", err);
+        const { FALLBACK_SERVERS } = await import("@/lib/supabase/fallback-data");
+        let result = [...FALLBACK_SERVERS];
+        if (catParam) {
+          result = result.filter(s => s.category === catParam);
+        }
+        if (sort === "newest") {
+          result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (sort === "rating") {
+          result.sort((a, b) => b.star_rating - a.star_rating);
+        } else {
+          result.sort((a, b) => b.install_count - a.install_count);
+        }
+        return result as unknown as ServerRow[];
       }
-      
-      if (sort === "newest") {
-        q = q.order("created_at", { ascending: false });
-      } else if (sort === "rating") {
-        q = q.order("star_rating", { ascending: false });
-      } else {
-        q = q.order("install_count", { ascending: false });
-      }
-      
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as ServerRow[];
     },
   });
 

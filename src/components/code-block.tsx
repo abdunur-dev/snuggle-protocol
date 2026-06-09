@@ -3,13 +3,22 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
-export function CodeBlock({ code, language }: { code: string; language?: string }) {
+export function CodeBlock({ 
+  code, 
+  language,
+  onCopy 
+}: { 
+  code: string; 
+  language?: string; 
+  onCopy?: () => void;
+}) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
+      onCopy?.();
     } catch {}
   };
   return (
@@ -24,10 +33,11 @@ export function CodeBlock({ code, language }: { code: string; language?: string 
       </pre>
       <button
         onClick={copy}
-        className="absolute top-2 right-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 transition opacity-0 group-hover:opacity-100 focus:opacity-100 shadow-sm"
+        className="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 shadow-sm"
       >
         {copied ? <><Check className="h-3 w-3 text-green-500" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
       </button>
     </div>
   );
 }
+

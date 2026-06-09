@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, Download, User } from "lucide-react";
 import Link from "next/link";
@@ -28,21 +28,47 @@ function GithubIcon({ className }: { className?: string }) {
 
 export default function ServerDetail({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  const [localInstallCount, setLocalInstallCount] = useState<number | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["server", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("mcp_servers")
-        .select("*")
-        .eq("slug", slug)
-        .eq("approved", true)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("not_found");
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("mcp_servers")
+          .select("*")
+          .eq("slug", slug)
+          .eq("approved", true)
+          .maybeSingle();
+        if (error || !data) {
+          const { FALLBACK_SERVERS } = await import("@/lib/supabase/fallback-data");
+          const found = FALLBACK_SERVERS.find(s => s.slug === slug);
+          if (!found) throw new Error("not_found");
+          return found;
+        }
+        return data;
+      } catch (err) {
+        if (err instanceof Error && err.message === "not_found") {
+          throw err;
+        }
+        console.warn("Failed to fetch mcp_server from Supabase, using local fallback data:", err);
+        const { FALLBACK_SERVERS } = await import("@/lib/supabase/fallback-data");
+        const found = FALLBACK_SERVERS.find(s => s.slug === slug);
+        if (!found) throw new Error("not_found");
+        return found;
+      }
     },
   });
+
+  const handleTrackInstall = async () => {
+    if (!data) return;
+    setLocalInstallCount(prev => (prev !== null ? prev : data.install_count) + 1);
+    try {
+      await (supabase as any).rpc("increment_install_count", { server_id: data.id });
+    } catch (e) {
+      console.warn("Could not increment install count in DB (RPC function might not exist yet):", e);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -79,6 +105,8 @@ export default function ServerDetail({ params }: { params: Promise<{ slug: strin
     prettyConfig = JSON.stringify(JSON.parse(data.config_snippet), null, 2);
   } catch {}
 
+  const displayInstalls = localInstallCount !== null ? localInstallCount : data.install_count;
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-10 flex-1">
       <Link href="/browse" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-900 transition">
@@ -96,7 +124,10 @@ export default function ServerDetail({ params }: { params: Promise<{ slug: strin
           </div>
           <p className="mt-3 text-base text-gray-500 leading-relaxed max-w-2xl">{data.description}</p>
           <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-gray-400">
-            <span className="inline-flex items-center gap-1.5"><Download className="h-4 w-4" />{data.install_count.toLocaleString()} installs</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Download className="h-4 w-4" />
+              {displayInstalls.toLocaleString()} installs
+            </span>
             <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 fill-amber-400 text-amber-400" />{Number(data.star_rating).toFixed(1)} rating</span>
             <span className="inline-flex items-center gap-1.5"><User className="h-4 w-4" />{data.author_name}</span>
             <a href={data.github_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:text-gray-900 transition font-medium">
@@ -108,13 +139,13 @@ export default function ServerDetail({ params }: { params: Promise<{ slug: strin
 
       <section className="mt-12">
         <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Install Command</h2>
-        <CodeBlock code={data.install_command} language="bash" />
+        <CodeBlock code={data.install_command} language="bash" onCopy={handleTrackInstall} />
       </section>
 
       <section className="mt-8">
         <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Agent Configuration</h2>
         <p className="text-sm text-gray-400 mb-3">Add this block to your MCP client configuration file (e.g. <code className="text-gray-950 font-semibold">claude_desktop_config.json</code>).</p>
-        <CodeBlock code={prettyConfig} language="json" />
+        <CodeBlock code={prettyConfig} language="json" onCopy={handleTrackInstall} />
       </section>
 
       <section className="mt-8">

@@ -27,14 +27,23 @@ export default function Home() {
   const { data: featuredServers, isLoading } = useQuery({
     queryKey: ["featured-servers"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("mcp_servers")
-        .select("id,name,slug,description,category,github_url,install_count,star_rating")
-        .eq("approved", true)
-        .order("install_count", { ascending: false })
-        .limit(6);
-      if (error) throw error;
-      return data as ServerRow[];
+      try {
+        const { data, error } = await supabase
+          .from("mcp_servers")
+          .select("id,name,slug,description,category,github_url,install_count,star_rating")
+          .eq("approved", true)
+          .order("install_count", { ascending: false })
+          .limit(6);
+        if (error || !data || data.length === 0) {
+          const { FALLBACK_SERVERS } = await import("@/lib/supabase/fallback-data");
+          return FALLBACK_SERVERS.slice(0, 6) as unknown as ServerRow[];
+        }
+        return data as ServerRow[];
+      } catch (err) {
+        console.warn("Failed to fetch mcp_servers from Supabase, using local fallback data:", err);
+        const { FALLBACK_SERVERS } = await import("@/lib/supabase/fallback-data");
+        return FALLBACK_SERVERS.slice(0, 6) as unknown as ServerRow[];
+      }
     },
   });
 
@@ -71,7 +80,7 @@ export default function Home() {
             </div>
 
             <h1 className="text-5xl sm:text-7xl font-bold font-display tracking-tight text-gray-900 leading-[1.05]">
-              Integrations That Drive Better <span className="font-serif italic font-normal text-gray-800">AI Outcomes</span>
+              Find and plug in <span className="font-serif italic font-normal text-gray-800">MCP servers</span> in seconds
             </h1>
 
             <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
