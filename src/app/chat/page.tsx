@@ -6,11 +6,11 @@ import {
   Trash2, 
   Send, 
   Sparkles, 
-  Menu, 
-  X, 
   Copy, 
   Check, 
-  ArrowLeft 
+  ChevronLeft, 
+  ChevronRight,
+  Info
 } from "lucide-react";
 import Link from "next/link";
 
@@ -54,7 +54,7 @@ function parseMarkdown(text: string): ContentSegment[] {
   });
 }
 
-// Custom code block component for ChatGPT style dark mode
+// Custom code block component matching Vercel/ChatGPT styling
 function ChatCodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -67,8 +67,8 @@ function ChatCodeBlock({ code, language }: { code: string; language?: string }) 
   };
 
   return (
-    <div className="my-3 rounded-lg overflow-hidden border border-zinc-800 bg-[#0d0d0d] text-zinc-100 max-w-full font-sans">
-      <div className="flex items-center justify-between px-4 py-1.5 bg-[#2f2f2f] border-b border-zinc-800 text-xs text-zinc-400 select-none">
+    <div className="my-4 rounded-xl overflow-hidden border border-gray-200 bg-[#0d0d0d] text-zinc-100 max-w-full font-sans shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#1c1c1e] border-b border-zinc-800 text-xs text-zinc-400 select-none">
         <span className="font-mono lowercase text-[11px] font-medium tracking-wide">{language || "text"}</span>
         <button
           onClick={handleCopy}
@@ -102,7 +102,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -118,6 +118,11 @@ export default function ChatPage() {
       } catch (e) {
         console.error("Failed to parse chat sessions", e);
       }
+    }
+
+    // Auto-collapse sidebar on mobile
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setSidebarCollapsed(true);
     }
   }, []);
 
@@ -144,7 +149,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
   }, [input]);
 
@@ -152,7 +157,6 @@ export default function ChatPage() {
     setActiveSessionId(null);
     setInput("");
     setError(null);
-    setSidebarOpen(false);
   };
 
   const handleDeleteSession = (id: string, e: React.MouseEvent) => {
@@ -293,18 +297,17 @@ export default function ChatPage() {
   };
 
   const renderFormattedText = (text: string) => {
-    // Splits text by bold (**text**) and inline code (`code`)
     const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
     return parts.map((part, idx) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         return (
-          <strong key={idx} className="font-semibold text-zinc-100">
+          <strong key={idx} className="font-semibold text-gray-900">
             {part.slice(2, -2)}
           </strong>
         );
       } else if (part.startsWith("`") && part.endsWith("`")) {
         return (
-          <code key={idx} className="bg-zinc-800 text-zinc-100 px-1.5 py-0.5 rounded font-mono text-xs border border-zinc-700/30">
+          <code key={idx} className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded font-mono text-xs border border-gray-200">
             {part.slice(1, -1)}
           </code>
         );
@@ -322,7 +325,7 @@ export default function ChatPage() {
       if (currentList) {
         if (currentList.type === "ul") {
           blocks.push(
-            <ul key={`ul-${blocks.length}`} className="list-disc pl-6 space-y-1.5 my-2 text-zinc-300">
+            <ul key={`ul-${blocks.length}`} className="list-disc pl-6 space-y-1.5 my-2 text-gray-700">
               {currentList.items.map((item, idx) => (
                 <li key={idx} className="leading-relaxed">{renderFormattedText(item)}</li>
               ))}
@@ -330,7 +333,7 @@ export default function ChatPage() {
           );
         } else {
           blocks.push(
-            <ol key={`ol-${blocks.length}`} className="list-decimal pl-6 space-y-1.5 my-2 text-zinc-300">
+            <ol key={`ol-${blocks.length}`} className="list-decimal pl-6 space-y-1.5 my-2 text-gray-700">
               {currentList.items.map((item, idx) => (
                 <li key={idx} className="leading-relaxed">{renderFormattedText(item)}</li>
               ))}
@@ -372,7 +375,7 @@ export default function ChatPage() {
       else {
         pushCurrentList();
         blocks.push(
-          <p key={`p-${i}`} className="my-1 text-zinc-300 leading-relaxed break-words">
+          <p key={`p-${i}`} className="my-1 text-gray-700 leading-relaxed break-words">
             {renderFormattedText(line)}
           </p>
         );
@@ -385,7 +388,7 @@ export default function ChatPage() {
   const renderMessageContent = (content: string, isStreamingActive: boolean) => {
     if (!content && isStreamingActive) {
       return (
-        <span className="inline-block w-2 h-4 bg-zinc-400 animate-pulse align-middle" />
+        <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse align-middle" />
       );
     }
 
@@ -407,7 +410,7 @@ export default function ChatPage() {
               <div key={segIdx} className="inline">
                 {renderBlocks(segment.content)}
                 {isLastSegment && isStreamingActive && (
-                  <span className="inline-block w-2 h-4 bg-zinc-400 animate-pulse align-middle ml-1" />
+                  <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse align-middle ml-1" />
                 )}
               </div>
             );
@@ -425,245 +428,233 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#212121] text-zinc-200 antialiased select-none font-sans">
-      
-      {/* Sidebar Overlay (Mobile) */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/60 md:hidden transition-opacity duration-200"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar Panel */}
-      <aside 
-        className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#171717] transition-transform duration-300 md:static md:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-3.5 border-b border-zinc-800/40">
-          <button
-            onClick={handleNewChat}
-            className="flex-1 flex items-center gap-2 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800/60 rounded-lg border border-zinc-800 transition"
-          >
-            <Plus className="h-4 w-4" />
-            <span>New Chat</span>
-          </button>
-          
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden ml-2 p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-200 transition"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Sidebar Nav Links */}
-        <div className="p-2 border-b border-zinc-800/30">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 rounded-md transition"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Marketplace</span>
-          </Link>
-        </div>
-
-        {/* Sidebar Sessions List */}
-        <div className="flex-1 overflow-y-auto px-2 py-3.5 space-y-1 scrollbar-thin">
-          <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider px-3 mb-2">
-            Recent Chats
-          </div>
-          {sessions.length === 0 ? (
-            <div className="text-xs text-zinc-600 px-3 py-2 italic">
-              No chat history
-            </div>
-          ) : (
-            sessions.map((session) => (
-              <div
-                key={session.id}
-                onClick={() => {
-                  setActiveSessionId(session.id);
-                  setSidebarOpen(false);
-                  setError(null);
-                }}
-                className={`group flex items-center justify-between px-3 py-2 text-sm rounded-lg cursor-pointer transition select-none ${
-                  activeSessionId === session.id 
-                    ? "bg-[#212121] text-zinc-100" 
-                    : "text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200"
-                }`}
-              >
-                <span className="truncate pr-2">{session.title}</span>
-                <button
-                  onClick={(e) => handleDeleteSession(session.id, e)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition"
-                  title="Delete chat"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="p-3 border-t border-zinc-800/40 flex items-center justify-between text-xs text-zinc-500">
-          <span>MCPHub Recommender</span>
-          <span className="font-mono text-[10px]">v1.0.0</span>
-        </div>
-      </aside>
-
-      {/* Main Area */}
-      <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-[#212121]">
+    <div className="min-h-screen bg-[#fafafa] py-10 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-5xl mx-auto space-y-6">
         
-        {/* Top Header Mobile */}
-        <header className="flex h-14 items-center justify-between px-4 border-b border-zinc-800/40 bg-[#212121] text-zinc-200 md:hidden select-none">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 hover:bg-zinc-850 rounded-lg text-zinc-400 hover:text-zinc-200 transition"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          
-          <span className="text-sm font-medium">MCP Recommender</span>
-          
-          <button
-            onClick={handleNewChat}
-            className="p-2 hover:bg-zinc-850 rounded-lg text-zinc-400 hover:text-zinc-200 transition"
-            title="New Chat"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-        </header>
-
-        {/* Message Container Area */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin select-text">
-          {messages.length === 0 ? (
-            /* Empty State */
-            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-9rem)] md:min-h-full px-4 text-center">
-              <div className="max-w-[720px] w-full flex flex-col items-center">
-                
-                {/* Clean minimalist logo wrapper */}
-                <div className="h-12 w-12 rounded-xl bg-zinc-850 flex items-center justify-center text-zinc-200 shadow-lg border border-zinc-800 mb-6 select-none">
-                  <Sparkles className="h-6 w-6" />
-                </div>
-                
-                <h1 className="text-2xl md:text-3xl font-medium tracking-tight text-zinc-100 font-sans mb-8 select-none">
-                  What MCP servers do you need?
-                </h1>
-
-                {/* Grid of suggestions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-[720px] text-left select-none">
-                  {suggestionCards.map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSendMessage(suggestion)}
-                      disabled={isLoading}
-                      className="px-4 py-3.5 rounded-xl border border-zinc-800 bg-[#2f2f2f]/30 hover:bg-[#2f2f2f]/50 text-sm text-zinc-300 hover:text-zinc-200 transition text-left cursor-pointer focus:outline-none"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Messages List */
-            <div className="w-full py-6 flex flex-col">
-              {messages.map((message, idx) => {
-                const isLastMessage = idx === messages.length - 1;
-                const isStreamingActive = isLoading && isLastMessage && message.role === "assistant";
-
-                return (
-                  <div
-                    key={idx}
-                    className={`w-full flex justify-center py-6 px-4 ${
-                      message.role === "user" ? "" : "bg-[#212121]"
-                    }`}
-                  >
-                    <div className="max-w-[760px] w-full flex gap-4 items-start">
-                      
-                      {/* Avatar container */}
-                      {message.role === "assistant" ? (
-                        <div className="h-8 w-8 shrink-0 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center text-zinc-300 shadow select-none">
-                          <Sparkles className="h-4 w-4" />
-                        </div>
-                      ) : (
-                        // Hidden/placeholder for alignment block on right aligned user message
-                        <div className="w-8 shrink-0 md:block hidden" />
-                      )}
-
-                      {/* Content panel */}
-                      <div className="flex-1 overflow-hidden">
-                        {message.role === "user" ? (
-                          <div className="flex justify-end">
-                            <div className="bg-[#2F2F2F] text-[#ECECF1] rounded-2xl px-4 py-2.5 text-sm max-w-[85%] leading-relaxed select-text shadow-sm border border-zinc-800/10">
-                              {message.content}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-zinc-300 text-[15px] leading-relaxed select-text">
-                            {renderMessageContent(message.content, isStreamingActive)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {/* Bottom error banner inside message area if needed */}
-              {error && (
-                <div className="w-full flex justify-center px-4 py-3">
-                  <div className="max-w-[760px] w-full p-4 rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 text-sm flex flex-col gap-1">
-                    <span className="font-semibold">Generation Error</span>
-                    <span>{error}</span>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
-
-        {/* Input Text Form Area */}
-        <div className="w-full py-3 md:py-6 px-4 flex justify-center border-t border-zinc-800/10 bg-[#212121] select-none">
-          <div className="max-w-[760px] w-full flex flex-col">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="relative rounded-2xl border border-zinc-800 bg-[#2f2f2f]/30 px-4 py-3 focus-within:border-zinc-700 transition"
-            >
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isLoading}
-                placeholder="Describe what your AI agent needs to do..."
-                rows={1}
-                className="w-full bg-transparent resize-none text-zinc-150 placeholder:text-zinc-500 focus:outline-none pr-12 text-sm leading-relaxed max-h-[200px]"
-                style={{ height: "auto" }}
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="absolute right-3 bottom-3 rounded-lg bg-zinc-200 p-1.5 text-zinc-900 hover:bg-zinc-100 active:scale-95 transition disabled:opacity-30 disabled:hover:bg-zinc-200 disabled:active:scale-100 flex items-center justify-center cursor-pointer shadow-md"
-                title="Send message"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </button>
-            </form>
-            <p className="mt-2 text-center text-[10px] text-zinc-600">
-              MCPHub chat assistant generates registry configurations. Verify installation commands and config structures.
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
+          <div>
+            <h1 className="text-3xl font-bold font-display tracking-tight text-gray-900">
+              MCP Registry Assistant
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Ask questions or describe your agent capabilities to discover recommended MCP servers.
             </p>
           </div>
+          
+          <div className="flex items-center gap-2">
+            <Link
+              href="/docs"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition shadow-sm"
+            >
+              <Info className="h-3.5 w-3.5" />
+              <span>Read local Docs</span>
+            </Link>
+          </div>
         </div>
-      </main>
+
+        {/* Dashboard Box */}
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex h-[620px] relative">
+          
+          {/* Collapsible Left Sidebar */}
+          <aside 
+            className={`flex flex-col bg-gray-50/70 border-r border-gray-200 transition-all duration-300 overflow-hidden ${
+              sidebarCollapsed ? "w-0 opacity-0" : "w-[260px] opacity-100"
+            }`}
+          >
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50/30 select-none">
+              <button
+                onClick={handleNewChat}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 transition shadow-sm"
+              >
+                <Plus className="h-3.5 w-3.5 text-gray-500" />
+                <span>New Chat</span>
+              </button>
+            </div>
+
+            {/* Sidebar History Items */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin select-none">
+              <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider px-2.5 py-1">
+                Recent Chats
+              </div>
+              {sessions.length === 0 ? (
+                <div className="text-xs text-gray-400 px-3 py-2 italic">
+                  No chat history
+                </div>
+              ) : (
+                sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    onClick={() => {
+                      setActiveSessionId(session.id);
+                      setError(null);
+                    }}
+                    className={`group flex items-center justify-between px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer transition ${
+                      activeSessionId === session.id 
+                        ? "bg-white border border-gray-200 text-gray-900 shadow-sm" 
+                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    <span className="truncate pr-2">{session.title}</span>
+                    <button
+                      onClick={(e) => handleDeleteSession(session.id, e)}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 hover:bg-gray-150 rounded transition"
+                      title="Delete chat"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Sidebar Footer */}
+            <div className="p-3 border-t border-gray-200 bg-gray-50/30 text-[10px] text-gray-400 font-mono flex items-center justify-between select-none">
+              <span>Registry v1.0.0</span>
+              <span>Groq LLM</span>
+            </div>
+          </aside>
+
+          {/* Right Chat Panel */}
+          <div className="flex-1 flex flex-col h-full bg-white relative overflow-hidden">
+            
+            {/* Header Panel */}
+            <div className="h-14 border-b border-gray-150 px-4 flex items-center justify-between bg-white select-none">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition"
+                  title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                  {sidebarCollapsed ? <ChevronRight className="h-4.5 w-4.5" /> : <ChevronLeft className="h-4.5 w-4.5" />}
+                </button>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm font-semibold text-gray-800">MCP Registry Assistant</span>
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-400 flex items-center gap-1.5 font-medium">
+                <span>Groq Llama 3.3</span>
+              </div>
+            </div>
+
+            {/* Chat Messages panel */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50/20 scrollbar-thin select-text">
+              {messages.length === 0 ? (
+                /* Empty state */
+                <div className="flex flex-col items-center justify-center h-full max-w-xl mx-auto text-center px-4 select-none">
+                  <div className="h-12 w-12 rounded-xl bg-gray-900 text-white flex items-center justify-center shadow mb-5">
+                    <Sparkles className="h-5.5 w-5.5 fill-current" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 font-display">
+                    What MCP servers do you need?
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 max-w-sm">
+                    Describe your agent workflows and I will recommend matching marketplace servers and generate standard JSON configs.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full mt-6 text-left">
+                    {suggestionCards.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSendMessage(suggestion)}
+                        disabled={isLoading}
+                        className="p-3 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 rounded-xl transition text-left cursor-pointer shadow-sm focus:outline-none"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Messages rendering list */
+                <div className="space-y-6 max-w-3xl mx-auto">
+                  {messages.map((message, idx) => {
+                    const isLastMessage = idx === messages.length - 1;
+                    const isStreamingActive = isLoading && isLastMessage && message.role === "assistant";
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex gap-4 items-start ${
+                          message.role === "user" ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        {message.role === "assistant" && (
+                          <div className="h-7 w-7 shrink-0 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 shadow-sm select-none">
+                            <Sparkles className="h-3.5 w-3.5 text-gray-800" />
+                          </div>
+                        )}
+
+                        <div className="max-w-[85%] overflow-hidden">
+                          {message.role === "user" ? (
+                            <div className="bg-gray-100 border border-gray-200/50 text-gray-800 rounded-2xl px-4 py-2.5 text-sm shadow-sm select-text">
+                              {message.content}
+                            </div>
+                          ) : (
+                            <div className="text-gray-800 text-[14.5px] leading-relaxed select-text py-0.5">
+                              {renderMessageContent(message.content, isStreamingActive)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {error && (
+                    <div className="p-3.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-semibold max-w-3xl mx-auto flex flex-col gap-1">
+                      <span>Error retrieving recommendation stream:</span>
+                      <span className="font-normal text-red-600">{error}</span>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Input Bar Form */}
+            <div className="p-4 bg-white border-t border-gray-150 select-none">
+              <div className="max-w-3xl mx-auto">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }}
+                  className="relative rounded-xl border border-gray-200 bg-gray-50 focus-within:bg-white focus-within:border-gray-300 transition pl-4 pr-12 py-2.5 flex items-center"
+                >
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={isLoading}
+                    placeholder="Describe what your AI agent needs to do..."
+                    rows={1}
+                    className="w-full bg-transparent resize-none text-gray-800 placeholder:text-gray-400 focus:outline-none text-sm leading-relaxed max-h-[120px] py-1"
+                    style={{ height: "auto" }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg bg-gray-900 p-2 text-white hover:bg-gray-800 active:scale-95 transition disabled:opacity-25 disabled:hover:bg-gray-900 disabled:active:scale-100 flex items-center justify-center cursor-pointer shadow-sm"
+                    title="Send message"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </form>
+                <div className="text-[10px] text-gray-400 text-center mt-2 font-medium">
+                  Assistant generates configuration parameters. Verify config snippets inside your desktop settings.
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
