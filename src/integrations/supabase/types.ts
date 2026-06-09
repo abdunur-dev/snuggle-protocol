@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      mcp_servers: {
+        Row: {
+          approved: boolean
+          author_email: string
+          author_name: string
+          category: string
+          config_snippet: string
+          created_at: string
+          description: string
+          github_url: string
+          id: string
+          install_command: string
+          install_count: number
+          name: string
+          slug: string
+          star_rating: number
+          submitted_by: string | null
+        }
+        Insert: {
+          approved?: boolean
+          author_email: string
+          author_name: string
+          category: string
+          config_snippet: string
+          created_at?: string
+          description: string
+          github_url: string
+          id?: string
+          install_command: string
+          install_count?: number
+          name: string
+          slug: string
+          star_rating?: number
+          submitted_by?: string | null
+        }
+        Update: {
+          approved?: boolean
+          author_email?: string
+          author_name?: string
+          category?: string
+          config_snippet?: string
+          created_at?: string
+          description?: string
+          github_url?: string
+          id?: string
+          install_command?: string
+          install_count?: number
+          name?: string
+          slug?: string
+          star_rating?: number
+          submitted_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
