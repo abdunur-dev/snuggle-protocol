@@ -135,7 +135,9 @@ export default function ChatPage() {
 
   // Scroll to bottom on new messages
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: isLoading ? "auto" : "smooth" });
+    }
   };
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
