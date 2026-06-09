@@ -19,9 +19,12 @@ export function SiteHeader() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  if (pathname === "/chat") return null;
+
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/browse", label: "Browse" },
+    { href: "/chat", label: "Agent" },
     { href: "/submit", label: "Submit" },
     { href: "https://modelcontextprotocol.io", label: "Docs", external: true },
   ];

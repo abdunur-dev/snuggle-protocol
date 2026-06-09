@@ -4,7 +4,6 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { MCPAgent } from "@/components/MCPAgent";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -33,7 +32,6 @@ export default function RootLayout({
           <SiteHeader />
           <main className="flex-1 flex flex-col">{children}</main>
           <SiteFooter />
-          <MCPAgent />
         </Providers>
       </body>
     </html>
